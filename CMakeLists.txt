@@ -24,11 +24,18 @@ message(STATUS "xpgui: platform=${XPGUI_PLATFORM}")
 set(XPGUI_PUBLIC_HEADERS
     include/xpgui/log.h
     include/xpgui/platform.h
+    include/xpgui/theme.h
 )
 
 set(XPGUI_SOURCES
     src/log.cpp
 )
+
+if(XPGUI_PLATFORM STREQUAL "windows")
+    list(APPEND XPGUI_SOURCES src/theme_win32.cpp)
+else()
+    list(APPEND XPGUI_SOURCES src/theme_stub.cpp)
+endif()
 
 add_library(xpgui STATIC ${XPGUI_SOURCES} ${XPGUI_PUBLIC_HEADERS})
 add_library(xpgui::xpgui ALIAS xpgui)
@@ -39,9 +46,17 @@ target_include_directories(xpgui PUBLIC
 
 target_compile_features(xpgui PUBLIC cxx_std_17)
 
+if(XPGUI_PLATFORM STREQUAL "windows")
+    target_link_libraries(xpgui PUBLIC dwmapi uxtheme gdi32 user32)
+endif()
+
 if(XPGUI_BUILD_TESTS)
     enable_testing()
     add_executable(xpgui_test_log tests/test_log.cpp)
     target_link_libraries(xpgui_test_log PRIVATE xpgui)
     add_test(NAME xpgui_test_log COMMAND xpgui_test_log)
+
+    add_executable(xpgui_test_theme tests/test_theme.cpp)
+    target_link_libraries(xpgui_test_theme PRIVATE xpgui)
+    add_test(NAME xpgui_test_theme COMMAND xpgui_test_theme)
 endif()
