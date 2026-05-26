@@ -74,10 +74,14 @@ int main() {
     auto zero = win32::onSystemThemeChanged({});
     assert(zero == 0);
 #else
-    // Non-Windows: stub returns Light, applyMode is no-op.
+    // Non-Windows: detection returns whichever mode the host system reports.
+    // Assert only that it returns a valid enumerator and that applyMode is safe.
     (void)dark;
     (void)light;
-    assert(theme::systemMode() == theme::Mode::Light);
+    auto m = theme::systemMode();
+    assert(m == theme::Mode::Light || m == theme::Mode::Dark);
+    std::printf("xpgui_test_theme: systemMode=%s\n",
+                m == theme::Mode::Dark ? "dark" : "light");
     theme::applyMode(nullptr, theme::Mode::Dark);
 #endif
 

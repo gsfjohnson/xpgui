@@ -31,10 +31,28 @@ set(XPGUI_SOURCES
     src/log.cpp
 )
 
+# Platform source selection.
 if(XPGUI_PLATFORM STREQUAL "windows")
     list(APPEND XPGUI_SOURCES src/theme_win32.cpp)
-else()
-    list(APPEND XPGUI_SOURCES src/theme_stub.cpp)
+elseif(XPGUI_PLATFORM STREQUAL "macos")
+    enable_language(OBJCXX)
+    list(APPEND XPGUI_SOURCES src/theme_macos.mm)
+elseif(XPGUI_PLATFORM STREQUAL "linux")
+    # GTK major version must match the host process. GTK3 and GTK4 cannot
+    # coexist in one process. Default to GTK3 (matches current consumers and
+    # the DESIGN.md commitment); set XPGUI_GTK_VERSION=4 to opt in.
+    set(XPGUI_GTK_VERSION "3" CACHE STRING
+        "GTK major version to link (3 or 4). Must match the host process.")
+    set_property(CACHE XPGUI_GTK_VERSION PROPERTY STRINGS "3" "4")
+    find_package(PkgConfig REQUIRED)
+    if(XPGUI_GTK_VERSION STREQUAL "4")
+        pkg_check_modules(XPGUI_GTK REQUIRED gtk4)
+        list(APPEND XPGUI_SOURCES src/theme_linux_gtk4.cpp)
+    else()
+        pkg_check_modules(XPGUI_GTK REQUIRED gtk+-3.0)
+        list(APPEND XPGUI_SOURCES src/theme_linux_gtk3.cpp)
+    endif()
+    message(STATUS "xpgui: linux GTK=${XPGUI_GTK_VERSION}")
 endif()
 
 add_library(xpgui STATIC ${XPGUI_SOURCES} ${XPGUI_PUBLIC_HEADERS})
@@ -48,6 +66,12 @@ target_compile_features(xpgui PUBLIC cxx_std_17)
 
 if(XPGUI_PLATFORM STREQUAL "windows")
     target_link_libraries(xpgui PUBLIC dwmapi uxtheme gdi32 user32)
+elseif(XPGUI_PLATFORM STREQUAL "macos")
+    target_link_libraries(xpgui PUBLIC "-framework AppKit" "-framework Foundation")
+elseif(XPGUI_PLATFORM STREQUAL "linux")
+    target_include_directories(xpgui PRIVATE ${XPGUI_GTK_INCLUDE_DIRS})
+    target_link_libraries(xpgui PUBLIC ${XPGUI_GTK_LIBRARIES})
+    target_compile_options(xpgui PRIVATE ${XPGUI_GTK_CFLAGS_OTHER})
 endif()
 
 if(XPGUI_BUILD_TESTS)

@@ -59,7 +59,7 @@ Until then, breaking changes are expected. Each consumer pins a commit SHA via s
 |---|---|---|---|
 | Windows 11 | MSYS2 LLVM Clang | — | No MSVC, no GCC |
 | macOS | Apple Clang | macOS 12 (Monterey) | OBJCXX (`.mm`) for Cocoa |
-| Linux | Clang | GTK3 era (Ubuntu 22.04+) | GTK3 + libayatana-appindicator; GTK4 deferred to v2.x |
+| Linux | Clang | GTK3 era (Ubuntu 22.04+) | GTK3 + libayatana-appindicator. GTK4 supported for `theme::systemMode()` detection (via `XPGUI_GTK_VERSION=4`); full GTK4 widget integration (tray etc.) deferred to v2.x. GTK3 and GTK4 cannot coexist in one process — xpgui's GTK version must match the host. |
 
 ### Repository layout
 
@@ -76,13 +76,10 @@ xpgui/
     win32/registry.h          # Win32-only escape hatch (later phases)
   src/
     log.cpp
-    theme_common.cpp          # (Phase 1)
-    win32/
-      theme_win32.cpp         # Dark mode, titlebar, brushes, ctlcolor (Phase 1)
-    macos/
-      theme_macos.mm          # NSAppearance hooks, mostly no-op (Phase 1)
-    linux/
-      theme_linux.cpp         # GTK theme detection, mostly no-op (Phase 1)
+    theme_win32.cpp           # Dark mode, titlebar, brushes, ctlcolor (Phase 1)
+    theme_macos.mm            # NSAppearance hooks, mostly no-op (Phase 1)
+    theme_linux_gtk3.cpp      # GTK3 GtkSettings dark-mode detection (Phase 1)
+    theme_linux_gtk4.cpp      # GTK4 GtkSettings dark-mode detection (Phase 1)
   examples/
     minimal_dark/             # Single-window app demonstrating dark mode (Phase 1)
   tests/
