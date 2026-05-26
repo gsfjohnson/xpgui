@@ -41,6 +41,12 @@ Mode systemMode();
 
 inline bool systemUsesDarkMode() { return systemMode() == Mode::Dark; }
 
+// True when the OS high-contrast accessibility mode is active.
+// Windows: SPI_GETHIGHCONTRAST. macOS: NSWorkspace
+// accessibilityDisplayShouldIncreaseContrast. Linux: GtkSettings
+// gtk-theme-name probed for "HighContrast".
+bool isHighContrast();
+
 // Apply a theme mode to a native window handle (HWND on Windows). On
 // non-Windows platforms this is a no-op — the OS handles dark-mode drawing.
 void applyMode(void* nativeWindowHandle, Mode mode);

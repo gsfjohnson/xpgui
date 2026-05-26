@@ -26,6 +26,11 @@ int main() {
     auto mode = theme::systemMode();
     (void)mode;
 
+    // isHighContrast() returns without crashing. Value depends on host
+    // accessibility settings; we only assert the call is safe.
+    bool hc = theme::isHighContrast();
+    (void)hc;
+
     // defaultPalette returns stable references.
     const auto& dark = theme::defaultPalette(theme::Mode::Dark);
     const auto& light = theme::defaultPalette(theme::Mode::Light);

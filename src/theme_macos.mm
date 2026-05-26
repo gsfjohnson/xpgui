@@ -33,6 +33,12 @@ Mode systemMode() {
     return Mode::Light;
 }
 
+bool isHighContrast() {
+    @autoreleasepool {
+        return [[NSWorkspace sharedWorkspace] accessibilityDisplayShouldIncreaseContrast];
+    }
+}
+
 void applyMode(void* /*nativeWindowHandle*/, Mode /*mode*/) {
     // Cocoa controls draw their own dark mode based on NSApp.appearance.
     // Hosts that want to override per-window can set NSWindow.appearance directly.

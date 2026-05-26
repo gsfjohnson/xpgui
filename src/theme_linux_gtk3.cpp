@@ -30,6 +30,19 @@ Mode systemMode() {
     return dark ? Mode::Dark : Mode::Light;
 }
 
+bool isHighContrast() {
+    GtkSettings* s = gtk_settings_get_default();
+    if (!s) return false;
+    gchar* theme_name = nullptr;
+    g_object_get(s, "gtk-theme-name", &theme_name, NULL);
+    bool hc = false;
+    if (theme_name) {
+        hc = std::strstr(theme_name, "HighContrast") != nullptr;
+        g_free(theme_name);
+    }
+    return hc;
+}
+
 void applyMode(void* /*nativeWindowHandle*/, Mode /*mode*/) {
     // GTK draws its own dark mode based on the user's GtkSettings.
 }

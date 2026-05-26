@@ -182,6 +182,15 @@ Mode systemMode() {
     return dark ? Mode::Dark : Mode::Light;
 }
 
+bool isHighContrast() {
+    HIGHCONTRASTW hc = {};
+    hc.cbSize = sizeof(hc);
+    if (SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(hc), &hc, 0)) {
+        return (hc.dwFlags & HCF_HIGHCONTRASTON) != 0;
+    }
+    return false;
+}
+
 void applyMode(void* nativeWindowHandle, Mode mode) {
     if (!nativeWindowHandle) return;
     ensureLoaded();
