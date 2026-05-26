@@ -23,6 +23,7 @@ message(STATUS "xpgui: platform=${XPGUI_PLATFORM}")
 
 set(XPGUI_PUBLIC_HEADERS
     include/xpgui/log.h
+    include/xpgui/menu.h
     include/xpgui/platform.h
     include/xpgui/theme.h
 )
@@ -33,7 +34,7 @@ set(XPGUI_SOURCES
 
 # Platform source selection.
 if(XPGUI_PLATFORM STREQUAL "windows")
-    list(APPEND XPGUI_SOURCES src/theme_win32.cpp)
+    list(APPEND XPGUI_SOURCES src/theme_win32.cpp src/menu_win32.cpp)
 elseif(XPGUI_PLATFORM STREQUAL "macos")
     enable_language(OBJCXX)
     list(APPEND XPGUI_SOURCES src/theme_macos.mm)
