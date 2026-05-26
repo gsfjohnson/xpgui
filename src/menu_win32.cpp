@@ -15,6 +15,8 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
+#include <dwmapi.h>
+#include <uxtheme.h>
 
 namespace xpgui {
 namespace win32 {
@@ -38,7 +40,7 @@ struct Item {
     bool isSeparator = false;
 };
 
-// Owning storage for per-menu items. Keyed by HMENU so applyDarkMenu is
+// Owning storage for per-menu items. Keyed by HMENU so applyOwnerDrawMenu is
 // idempotent (a second call updates the same entry).
 std::mutex g_mu;
 std::unordered_map<HMENU, std::vector<std::unique_ptr<Item>>> g_items;
@@ -309,7 +311,7 @@ void setDarkMenuPalette(const DarkMenuPalette& palette) {
     rebuildBgBrush();
 }
 
-void applyDarkMenu(void* hMenu, bool recursive) {
+void applyOwnerDrawMenu(void* hMenu, bool recursive) {
     applyRecursive(reinterpret_cast<HMENU>(hMenu), recursive);
 }
 
@@ -422,6 +424,63 @@ bool handleDarkMenuDraw(void* drawItemStruct) {
 
     SelectObject(hdc, oldFont);
     return true;
+}
+
+// ---------------------------------------------------------------------------
+// PopupFrameScope — thread-local WH_CBT hook that applies
+// DWMWA_USE_IMMERSIVE_DARK_MODE to popup-menu windows (class #32768) at
+// creation so their non-client frame matches the owner window's DWM frame.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+thread_local int  tl_frameDepth = 0;
+thread_local bool tl_frameDark  = false;
+thread_local HHOOK tl_frameHook = nullptr;
+
+LRESULT CALLBACK popupFrameCbtProc(int code, WPARAM wParam, LPARAM lParam) {
+    if (code == HCBT_CREATEWND) {
+        HWND hwnd = reinterpret_cast<HWND>(wParam);
+        if (hwnd) {
+            wchar_t cls[16] = {};
+            int n = GetClassNameW(hwnd, cls, 16);
+            // Popup-menu window class is "#32768".
+            if (n > 0 && lstrcmpW(cls, L"#32768") == 0) {
+                BOOL useDark = tl_frameDark ? TRUE : FALSE;
+                // DWMWA_USE_IMMERSIVE_DARK_MODE = 20 on Win10 20H1+
+                DwmSetWindowAttribute(hwnd, 20, &useDark, sizeof(useDark));
+                SetWindowTheme(hwnd, tl_frameDark ? L"DarkMode_Explorer" : nullptr, nullptr);
+
+                // Pin the popup's outer border to the host-supplied color
+                // (palette.separator, which the app maps from Theme.border).
+                // DWMWA_BORDER_COLOR = 34, Win11 22H2+; older Windows: no-op.
+                COLORREF border;
+                {
+                    std::lock_guard<std::mutex> lock(g_mu);
+                    border = g_palette.separator.toCOLORREF();
+                }
+                DwmSetWindowAttribute(hwnd, 34, &border, sizeof(border));
+            }
+        }
+    }
+    return CallNextHookEx(tl_frameHook, code, wParam, lParam);
+}
+
+}  // namespace
+
+PopupFrameScope::PopupFrameScope(theme::Mode mode) {
+    tl_frameDark = (mode == theme::Mode::Dark);
+    if (tl_frameDepth++ == 0) {
+        tl_frameHook = SetWindowsHookExW(WH_CBT, popupFrameCbtProc, nullptr,
+                                          GetCurrentThreadId());
+    }
+}
+
+PopupFrameScope::~PopupFrameScope() {
+    if (--tl_frameDepth == 0 && tl_frameHook) {
+        UnhookWindowsHookEx(tl_frameHook);
+        tl_frameHook = nullptr;
+    }
 }
 
 }  // namespace win32

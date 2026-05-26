@@ -51,6 +51,11 @@ bool isHighContrast();
 // non-Windows platforms this is a no-op — the OS handles dark-mode drawing.
 void applyMode(void* nativeWindowHandle, Mode mode);
 
+// Set an explicit DWM border color on a top-level window. Windows-only;
+// requires Win11 22H2+ for DWMWA_BORDER_COLOR (silently no-ops on older
+// Windows). Use Color{} to opt back to the system default.
+void setWindowBorderColor(void* nativeWindowHandle, Color color);
+
 const Colors& defaultPalette(Mode mode);
 
 }  // namespace theme

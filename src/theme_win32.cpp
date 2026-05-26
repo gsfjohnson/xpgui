@@ -209,6 +209,14 @@ void applyMode(void* nativeWindowHandle, Mode mode) {
     InvalidateRect(hwnd, nullptr, TRUE);
 }
 
+void setWindowBorderColor(void* nativeWindowHandle, Color color) {
+    if (!nativeWindowHandle) return;
+    HWND hwnd = reinterpret_cast<HWND>(nativeWindowHandle);
+    // DWMWA_BORDER_COLOR = 34 (Win11 22H2+). Older Windows: no-op.
+    COLORREF cr = color.toCOLORREF();
+    DwmSetWindowAttribute(hwnd, 34, &cr, sizeof(cr));
+}
+
 const Colors& defaultPalette(Mode mode) {
     return mode == Mode::Dark ? darkPalette() : lightPalette();
 }
