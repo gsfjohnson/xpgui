@@ -44,9 +44,13 @@ void applyMode(void* /*nativeWindowHandle*/, Mode /*mode*/) {
     // Hosts that want to override per-window can set NSWindow.appearance directly.
 }
 
-const Colors& defaultPalette(Mode /*mode*/) {
-    static const Colors c{};
-    return c;
+const Colors& defaultPalette(Mode mode) {
+    // Cocoa draws its own theming, so these values are unused placeholders — but
+    // keep a distinct, stable instance per mode to honor the per-mode reference
+    // contract (defaultPalette(Dark) and (Light) must not alias).
+    static const Colors dark{};
+    static const Colors light{};
+    return mode == Mode::Dark ? dark : light;
 }
 
 }  // namespace theme
